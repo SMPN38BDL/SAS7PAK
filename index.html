@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UAS Genap SMPN 38 Bandar Lampung</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Anti-Copy & Anti-Translate CSS */
+        body {
+            user-select: none; /* Prevent text selection */
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            -moz-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        .translate-no {
+            translate: no;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Modal overlay */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col translate-no" oncontextmenu="return false;" oncopy="return false;" oncut="return false;" onpaste="return false;">
+
+    <!-- APP SCRIPT URL (GANTI DENGAN URL GOOGLE APPS SCRIPT ANDA) -->
+    <script>
+        const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxZNUdUtnHNQ2nWuymj1KWJDRXD3QV_0kFaVJbKXjWS522J38xySRM6rn5JhXhbkDSU/exec"; 
+    </script>
+
+    <!-- SECTION 1: LOGIN / FORM INPUT -->
+    <div id="loginSection" class="flex-1 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+            <div class="text-center mb-6">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Logo_Tut_Wuri_Handayani.png/490px-Logo_Tut_Wuri_Handayani.png" alt="Logo" class="h-16 mx-auto mb-2 opacity-80">
+                <h1 class="text-2xl font-bold text-blue-700">UAS GENAP</h1>
+                <h2 class="text-lg font-semibold text-gray-600">SMPN 38 Bandar Lampung</h2>
+                <p class="text-sm text-gray-500 mt-1">Pendidikan Anti Korupsi Kelas 7</p>
+            </div>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 text-sm text-yellow-700 rounded-r-md shadow-sm">
+                <strong><i class="fas fa-exclamation-triangle mr-1"></i> PERHATIAN:</strong><br>
+                Ujian ini menggunakan sistem <b>Anti-Kecurangan</b>. Anda tidak diizinkan untuk:
+                <ul class="list-disc ml-5 mt-1">
+                    <li>Keluar dari mode layar penuh.</li>
+                    <li>Membuka tab/aplikasi lain.</li>
+                    <li>Melakukan screenshot atau copy-paste.</li>
+                </ul>
+                Batas pelanggaran maksimal <b>2 KALI</b>. Lebih dari itu, ujian otomatis disubmit.
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap Siswa</label>
+                    <input type="text" id="studentName" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Masukkan nama lengkap Anda..." required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                    <select id="studentClass" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+                        <option value="" disabled selected>Pilih Kelas...</option>
+                        <option value="7A">7 A</option>
+                        <option value="7B">7 B</option>
+                        <option value="7C">7 C</option>
+                        <option value="7D">7 D</option>
+                        <option value="7E">7 E</option>
+                        <option value="7F">7 F</option>
+                    </select>
+                </div>
+                <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 mt-4 flex items-center justify-center">
+                    <i class="fas fa-play mr-2"></i> MULAI UJIAN SEKARANG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: EXAM AREA -->
+    <div id="examSection" class="hidden flex-col h-screen">
+        <!-- Header -->
+        <header class="bg-blue-700 text-white p-4 shadow-md flex justify-between items-center z-10 shrink-0">
+            <div>
+                <h1 class="font-bold text-sm md:text-lg truncate">UAS PAK Kelas 7</h1>
+                <p id="studentInfoDisplay" class="text-xs text-blue-200"></p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleQuestionList()" class="bg-blue-800 hover:bg-blue-900 p-2 rounded text-sm md:text-base transition">
+                    <i class="fas fa-th-list"></i> <span class="hidden md:inline ml-1">Daftar Soal</span>
+                </button>
+                <div class="bg-white text-blue-800 font-mono font-bold px-3 py-1.5 rounded flex items-center text-sm md:text-base border border-blue-300">
+                    <i class="fas fa-clock mr-2 text-blue-500"></i>
+                    <span id="timerDisplay">90:00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50 pb-24 relative">
+            <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-sm p-5 md:p-8 border border-gray-200">
+                <!-- Question Number & Status -->
+                <div class="flex justify-between items-center mb-6 border-b pb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Soal No. <span id="currentQuestionNum">1</span></h2>
+                    <span id="cheatWarningDisplay" class="text-xs font-bold bg-red-100 text-red-600 px-3 py-1 rounded-full border border-red-200 hidden">
+                        Peringatan: <span id="warningCountDisplay">0</span>/2
+                    </span>
+                </div>
+
+                <!-- Question Text -->
+                <p id="questionText" class="text-base md:text-lg text-gray-800 mb-6 leading-relaxed font-medium">Memuat soal...</p>
+
+                <!-- Options -->
+                <div id="optionsContainer" class="space-y-3">
+                    <!-- Options injected here via JS -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <footer class="bg-white border-t p-4 flex justify-between items-center fixed bottom-0 w-full shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-10">
+            <button onclick="prevQuestion()" id="btnPrev" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-chevron-left mr-1"></i> Sebelumnya
+            </button>
+            <button onclick="submitExamPrompt()" id="btnSubmit" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-bold shadow-md transition hidden">
+                <i class="fas fa-paper-plane mr-1"></i> Selesai
+            </button>
+            <button onclick="nextQuestion()" id="btnNext" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition">
+                Selanjutnya <i class="fas fa-chevron-right ml-1"></i>
+            </button>
+        </footer>
+    </div>
+
+    <!-- Modal Daftar Soal -->
+    <div id="questionListModal" class="hidden fixed inset-0 modal-overlay z-50 flex justify-end">
+        <div class="bg-white w-4/5 md:w-80 h-full shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-0">
+            <div class="p-4 bg-gray-100 border-b flex justify-between items-center">
+                <h3 class="font-bold text-gray-800">Daftar Soal</h3>
+                <button onclick="toggleQuestionList()" class="text-gray-500 hover:text-red-500 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1">
+                <div class="flex gap-4 mb-4 text-xs">
+                    <div class="flex items-center"><span class="w-3 h-3 bg-green-500 rounded-full mr-1"></span> Dijawab</div>
+                    <div class="flex items-center"><span class="w-3 h-3 border border-gray-300 rounded-full mr-1"></span> Belum</div>
+                </div>
+                <div id="questionGrid" class="grid grid-cols-5 gap-2">
+                    <!-- Grid generated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: RESULTS / REVIEW -->
+    <div id="resultSection" class="hidden flex-col h-screen bg-gray-100 overflow-y-auto">
+        <div class="bg-blue-700 text-white p-8 text-center shadow-lg">
+            <h1 class="text-3xl font-bold mb-2">Ujian Selesai!</h1>
+            <p class="text-blue-100 mb-6">Berikut adalah hasil ujian Pendidikan Anti Korupsi Anda.</p>
+            
+            <div class="bg-white rounded-xl p-6 max-w-lg mx-auto text-gray-800 shadow-xl flex justify-around items-center">
+                <div class="text-center">
+                    <p class="text-sm text-gray-500 font-bold uppercase">Benar</p>
+                    <p id="resBenar" class="text-3xl font-black text-green-500">0</p>
+                </div>
+                <div class="text-center border-l border-r px-8 border-gray-200">
+                    <p class="text-sm text-gray-500 font-bold uppercase">NILAI AKHIR</p>
+                    <p id="resNilai" class="text-5xl font-black text-blue-600">0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-500 font-bold uppercase">Salah</p>
+                    <p id="resSalah" class="text-3xl font-black text-red-500">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto w-full p-4 md:p-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-6 border-b-2 border-blue-500 inline-block pb-2">Review Jawaban</h2>
+            <div id="reviewContainer" class="space-y-6">
+                <!-- Review content injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-white bg-opacity-90 z-[100] flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+        <p class="text-blue-800 font-bold text-lg animate-pulse" id="loadingText">Menyimpan data...</p>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="customAlert" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center border-t-4 border-red-500">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500 text-2xl">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2" id="alertTitle">Peringatan!</h3>
+            <p class="text-gray-600 mb-6" id="alertMessage">Pesan peringatan.</p>
+            <button onclick="closeAlert()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition">Mengerti</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="customConfirm" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full text-center border-t-4 border-yellow-500">
+            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 text-yellow-500 text-2xl">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Konfirmasi Submit</h3>
+            <p class="text-gray-600 mb-6" id="confirmMessage">Yakin ingin mengumpulkan?</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeConfirm()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition">Batal</button>
+                <button onclick="executeSubmit()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition">Yakin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Javascript Logic -->
+    <script>
+        // --- DATA SOAL (50 Soal PAK) ---
+        const questions = [
+            // Jujur (1-8)
+            { q: "Sikap jujur dalam lingkungan sekolah dapat diwujudkan melalui perilaku...", options: ["A. Mengerjakan PR di sekolah dengan menyontek teman", "B. Mengakui kesalahan jika terlambat datang ke sekolah", "C. Membeli jajanan di kantin tanpa membayar dengan alasan lupa", "D. Menyembunyikan buku perpustakaan yang rusak"], answer: 1, explanation: "Kejujuran berarti mengakui apa adanya, termasuk kesalahan yang dibuat seperti terlambat." },
+            { q: "Saat ulangan harian, teman sebangkumu meminta contekan karena ia tidak belajar semalam. Sikap yang paling tepat sesuai nilai kejujuran adalah...", options: ["A. Memberikan contekan agar tidak dimusuhi", "B. Memberikan jawaban yang salah agar ia jera", "C. Menolak dengan halus dan tetap fokus pada pekerjaan sendiri", "D. Melaporkan kepada guru dengan suara keras saat itu juga"], answer: 2, explanation: "Menolak memberikan contekan adalah wujud integritas dan kejujuran dalam akademik." },
+            { q: "Kamu menemukan dompet berisi uang dan kartu identitas di halaman sekolah. Tindakan jujur yang harus kamu lakukan adalah...", options: ["A. Mengambil uangnya dan membuang dompetnya", "B. Membiarkan saja karena bukan milikmu", "C. Menyerahkan dompet tersebut ke ruang guru atau satpam", "D. Mengumumkan di kelas dan meminta imbalan jika ada yang merasa memiliki"], answer: 2, explanation: "Mengembalikan barang yang bukan hak kita kepada pihak yang berwenang (sekolah) adalah tindakan jujur." },
+            { q: "Apa dampak buruk jika kebiasaan menyontek dibiarkan sejak SMP?", options: ["A. Akan terbiasa berbuat curang hingga dewasa dan berpotensi menjadi koruptor", "B. Mendapat nilai tinggi tanpa harus belajar keras", "C. Mempererat tali persahabatan antar teman sekelas", "D. Melatih kemampuan bekerja sama dalam tim"], answer: 0, explanation: "Menyontek adalah bibit korupsi. Jika dibiarkan, akan membentuk karakter yang menghalalkan segala cara." },
+            { q: "Berbohong kepada orang tua mengenai uang SPP yang sebenarnya digunakan untuk bermain game online merupakan pelanggaran terhadap nilai...", options: ["A. Keadilan", "B. Kejujuran", "C. Kepedulian", "D. Kesederhanaan"], answer: 1, explanation: "Berbohong adalah kebalikan dari kejujuran." },
+            { q: "Seorang bendahara kelas menggunakan uang kas untuk keperluan pribadinya secara diam-diam. Tindakan ini disebut...", options: ["A. Pencucian uang", "B. Penggelapan dana (bibit korupsi)", "C. Pinjaman tanpa bunga", "D. Hak bendahara"], answer: 1, explanation: "Menggunakan dana yang diamanahkan untuk kepentingan pribadi secara diam-diam adalah penggelapan." },
+            { q: "Orang yang memiliki sifat jujur biasanya akan mendapatkan...", options: ["A. Banyak musuh", "B. Kepercayaan dari orang lain", "C. Kesulitan hidup", "D. Kekayaan dengan cepat"], answer: 1, explanation: "Kejujuran adalah pondasi utama dalam membangun kepercayaan (trust) dari orang lain." },
+            { q: "Manakah pepatah yang paling sesuai dengan nilai kejujuran?", options: ["A. Berakit-rakit ke hulu berenang ketepian", "B. Sepandai-pandainya tupai melompat akhirnya jatuh juga", "C. Lebih baik jujur walau pahit daripada berbohong namun manis", "D. Air susu dibalas air tuba"], answer: 2, explanation: "Kejujuran harus ditegakkan meskipun menghadapi risiko atau terasa tidak menyenangkan." },
+            // Peduli (9-16)
+            { q: "Melihat ada keran air di toilet sekolah yang terbuka dan airnya meluber, sikap peduli yang seharusnya dilakukan adalah...", options: ["A. Membiarkan saja karena tugas petugas kebersihan", "B. Menutup keran air tersebut agar air tidak terbuang sia-sia", "C. Memberitahu teman agar tidak masuk ke toilet tersebut", "D. Memfoto dan mengunggahnya ke media sosial"], answer: 1, explanation: "Menutup keran air adalah wujud kepedulian terhadap fasilitas sekolah dan kelestarian lingkungan." },
+            { q: "Ketika ada teman sekelas yang sedang sakit dan dirawat di rumah sakit, bentuk kepedulian yang baik adalah...", options: ["A. Menjenguknya dan memberikan semangat", "B. Membiarkan saja karena nanti juga sembuh sendiri", "C. Mengolok-oloknya karena kondisi fisiknya lemah", "D. Meminta uang iuran dengan paksa kepada teman lain untuk membeli buah"], answer: 0, explanation: "Menjenguk dan mendoakan adalah bentuk empati dan kepedulian sosial." },
+            { q: "Kepedulian terhadap lingkungan sekolah (Go Green) dapat diwujudkan dengan...", options: ["A. Membuang sampah plastik di laci meja", "B. Membawa bekal makanan dengan kotak makan sendiri untuk mengurangi sampah plastik", "C. Merusak tanaman hias di taman sekolah", "D. Menggunakan banyak kertas untuk coret-coret"], answer: 1, explanation: "Mengurangi sampah plastik adalah tindakan nyata peduli kelestarian lingkungan." },
+            { q: "Sikap tidak acuh terhadap teman yang sedang mengalami kesulitan memahami pelajaran berpotensi menghilangkan nilai...", options: ["A. Kejujuran", "B. Kepedulian", "C. Kemandirian", "D. Kesederhanaan"], answer: 1, explanation: "Tidak acuh atau egois adalah lawan dari nilai kepedulian." },
+            { q: "Sumbangan sukarela untuk korban bencana alam yang diadakan oleh OSIS merupakan implementasi dari nilai...", options: ["A. Kerja keras", "B. Kedisiplinan", "C. Kepedulian sosial", "D. Keadilan"], answer: 2, explanation: "Berbagi dengan yang membutuhkan adalah inti dari kepedulian sosial." },
+            { q: "Apa yang kamu lakukan jika melihat temanmu dibully (dirundung) oleh kakak kelas?", options: ["A. Ikut-ikutan membully agar terlihat hebat", "B. Menonton dan menertawakan", "C. Pura-pura tidak melihat dan pergi menjauh", "D. Melaporkan kejadian tersebut kepada guru BK atau wali kelas"], answer: 3, explanation: "Melaporkan tindakan perundungan adalah wujud kepedulian terhadap keselamatan dan kenyamanan teman." },
+            { q: "Bentuk kepedulian di lingkungan masyarakat sekitar tempat tinggal adalah...", options: ["A. Memutar musik dengan volume maksimal di malam hari", "B. Ikut serta dalam kegiatan gotong royong membersihkan selokan", "C. Menutup pintu rapat-rapat saat tetangga mengadakan acara", "D. Membuang sampah di lahan kosong milik orang lain"], answer: 1, explanation: "Gotong royong adalah budaya bangsa yang mencerminkan kepedulian warga." },
+            { q: "Membantu adik mengerjakan PR di rumah tanpa meminta imbalan uang merupakan contoh kepedulian di lingkungan...", options: ["A. Sekolah", "B. Masyarakat", "C. Keluarga", "D. Bernegara"], answer: 2, explanation: "Interaksi dengan anggota keluarga inti terjadi di lingkungan keluarga." },
+            // Kemandirian (17-24)
+            { q: "Ciri seorang siswa yang memiliki sifat mandiri adalah...", options: ["A. Selalu meminta bantuan teman saat ulangan", "B. Menyiapkan buku pelajaran dan seragam sekolah sendiri", "C. Menangis jika tidak diantar orang tua sampai ke depan pintu kelas", "D. Menyuruh pembantu untuk mengerjakan tugas prakarya"], answer: 1, explanation: "Mandiri berarti mampu mengurus keperluan pribadi tanpa bergantung berlebihan pada orang lain." },
+            { q: "Kemandirian sangat penting untuk mencegah korupsi karena...", options: ["A. Orang mandiri tidak suka berteman", "B. Orang mandiri terbiasa berusaha sendiri sehingga tidak mudah tergiur merampas hak orang lain", "C. Orang mandiri selalu ingin menjadi pemimpin", "D. Orang mandiri biasanya pelit"], answer: 1, explanation: "Mental mandiri membentuk karakter yang menghargai proses dan tidak mencari jalan pintas yang merugikan." },
+            { q: "Tugas kelompok diberikan oleh guru, sikap mandiri yang tepat dalam kerja kelompok adalah...", options: ["A. Hanya titip nama di lembar tugas", "B. Mengerjakan bagian tugasnya dengan penuh tanggung jawab", "C. Menyuruh ketua kelompok mengerjakan semuanya", "D. Membayar teman agar tugasnya dikerjakan"], answer: 1, explanation: "Dalam tim, mandiri berarti mampu menyelesaikan porsi tanggung jawabnya sendiri." },
+            { q: "Contoh perilaku tidak mandiri yang sering dilakukan pelajar adalah...", options: ["A. Berangkat ke sekolah naik sepeda", "B. Membaca materi sebelum guru menjelaskan", "C. Menjiplak (copy-paste) tugas dari internet tanpa dibaca dan diedit", "D. Mencuci sepatu sekolahnya sendiri di hari Minggu"], answer: 2, explanation: "Menjiplak adalah bentuk ketergantungan pada karya orang lain secara instan." },
+            { q: "Sebagai anak SMP, bentuk kemandirian finansial sederhana yang bisa dilakukan adalah...", options: ["A. Mencari pinjaman online", "B. Menyisihkan uang saku untuk ditabung guna membeli keperluan sekolah", "C. Meminta uang saku tambahan setiap hari dengan alasan tugas", "D. Membeli barang mewah agar diakui teman"], answer: 1, explanation: "Menabung adalah langkah awal belajar mengelola keuangan sendiri (mandiri)." },
+            { q: "Seorang siswa yang gagal masuk SMA favorit karena nilainya kurang, namun ia tetap bangkit dan belajar di sekolah lain dengan sungguh-sungguh. Ini menunjukkan ia memiliki nilai...", options: ["A. Kemandirian dan Kerja Keras", "B. Kesederhanaan dan Kejujuran", "C. Kepedulian dan Keadilan", "D. Kecurangan dan Kesombongan"], answer: 0, explanation: "Bangkit dari kegagalan secara mandiri memerlukan kerja keras." },
+            { q: "Bila kamu tertinggal pelajaran karena sakit, langkah mandiri yang kamu ambil adalah...", options: ["A. Menunggu guru memanggil untuk remedial", "B. Meminjam catatan teman dan mengejar ketertinggalan secara proaktif", "C. Meminta orang tua memarahi guru agar diberi nilai KKM", "D. Mengabaikan materi yang terlewat"], answer: 1, explanation: "Proaktif mengejar ketertinggalan adalah bukti inisiatif dan kemandirian belajar." },
+            { q: "Seseorang yang mandiri tidak akan membenarkan perilaku nepotisme (Korupsi, Kolusi, Nepotisme) karena...", options: ["A. Ia tidak punya kenalan pejabat", "B. Ia lebih percaya pada kemampuan dan usahanya sendiri untuk mencapai sesuatu", "C. Nepotisme memakan biaya mahal", "D. Ia takut ditangkap polisi"], answer: 1, explanation: "Kemandirian memupuk rasa percaya diri pada kemampuan sendiri, menolak bantuan yang melanggar aturan (nepotisme)." },
+            // Sederhana (25-32)
+            { q: "Gaya hidup sederhana bagi seorang pelajar SMP ditunjukkan dengan sikap...", options: ["A. Memakai perhiasan emas yang mencolok ke sekolah", "B. Membawa handphone terbaru keluaran harga puluhan juta", "C. Menggunakan seragam yang bersih, rapi, dan sesuai aturan sekolah", "D. Meminta uang jajan berlebihan kepada orang tua"], answer: 2, explanation: "Sederhana berarti proporsional, tidak berlebihan, dan taat aturan." },
+            { q: "Membeli barang karena fungsinya (kebutuhan), bukan karena gengsi atau mereknya (keinginan), merupakan pengamalan dari nilai...", options: ["A. Kejujuran", "B. Kesederhanaan", "C. Keadilan", "D. Kerja keras"], answer: 1, explanation: "Kesederhanaan mengajarkan kita untuk memprioritaskan kebutuhan (needs) daripada keinginan (wants)." },
+            { q: "Mengapa gaya hidup mewah (hedonisme) sering dikaitkan sebagai pemicu perilaku korupsi?", options: ["A. Karena gaya mewah membutuhkan biaya besar yang seringkali memicu orang mencari uang dengan cara ilegal/korupsi", "B. Karena orang mewah selalu pintar bersembunyi", "C. Karena korupsi hanya bisa dilakukan orang kaya", "D. Karena hedonisme adalah gaya hidup modern"], answer: 0, explanation: "Besar pasak daripada tiang (kebutuhan gengsi lebih besar dari pendapatan) sering menjadi motif utama korupsi." },
+            { q: "Temanmu merayakan ulang tahun secara besar-besaran di hotel, sementara kondisi ekonomi keluargamu pas-pasan. Sikap sederhana yang tepat adalah...", options: ["A. Memaksa orang tua membelikan kado mahal agar tidak malu", "B. Tidak datang dan memutuskan pertemanan", "C. Datang dan memberikan kado buatan sendiri yang bermanfaat serta doa yang tulus", "D. Berhutang kepada teman lain untuk membeli kado mahal"], answer: 2, explanation: "Sederhana berarti menyesuaikan kemampuan tanpa harus merasa gengsi." },
+            { q: "Merawat barang-barang milik pribadi agar awet dan tidak perlu sering membeli yang baru adalah bentuk dari...", options: ["A. Pelit", "B. Kesederhanaan", "C. Kemiskinan", "D. Kekurangan"], answer: 1, explanation: "Menjaga barang agar awet adalah gaya hidup hemat dan sederhana." },
+            { q: "Makanan yang dibawa dari rumah sebagai bekal selain lebih sehat juga melatih sikap...", options: ["A. Pamer", "B. Sederhana dan Hemat", "C. Sombong", "D. Pilih kasih"], answer: 1, explanation: "Membawa bekal menghindarkan dari sifat konsumtif berlebihan." },
+            { q: "Orang yang hidup sederhana akan merasa lebih tenang karena...", options: ["A. Ia tidak memiliki ambisi apapun", "B. Ia tidak terbebani oleh tuntutan gengsi dan gaya hidup yang melebihi kemampuannya", "C. Ia tidak perlu bekerja keras", "D. Ia selalu dihindari orang kaya"], answer: 1, explanation: "Kesederhanaan membawa kedamaian karena menjauhkan diri dari stres akibat gaya hidup palsu." },
+            { q: "Berikut ini yang BUKAN merupakan contoh kesederhanaan adalah...", options: ["A. Membeli alat tulis secukupnya sesuai keperluan", "B. Menggunakan kuota internet untuk hal yang penting", "C. Mengganti tas sekolah setiap bulan agar terlihat keren", "D. Makan siang dengan menu gizi seimbang tanpa berlebihan"], answer: 2, explanation: "Mengganti tas setiap bulan demi gengsi adalah pemborosan dan lawan dari kesederhanaan." },
+            // Kerja Keras (33-41)
+            { q: "Kerja keras dalam meraih prestasi di sekolah diwujudkan dengan...", options: ["A. Belajar dengan sistem SKS (Sistem Ngebut Semalam) menjelang ujian", "B. Mencari bocoran soal di internet", "C. Belajar secara rutin, disiplin, dan pantang menyerah meski materi sulit", "D. Meminta guru les untuk memberikan nilai tinggi"], answer: 2, explanation: "Kerja keras bermakna usaha yang sungguh-sungguh, konsisten, dan pantang menyerah." },
+            { q: "Sikap pantang menyerah saat mendapatkan nilai matematika yang jelek adalah...", options: ["A. Menyalahkan guru matematika yang sulit dimengerti", "B. Membuang buku matematika dan membenci pelajarannya", "C. Mencari tahu kesalahan, banyak berlatih soal, dan ikut bimbingan", "D. Mengubah nilai di raport dengan tipe-X"], answer: 2, explanation: "Kerja keras diiringi dengan evaluasi diri dan usaha perbaikan." },
+            { q: "Bagaimana kaitan nilai kerja keras dengan pencegahan tindak pidana korupsi?", options: ["A. Pekerja keras tidak punya waktu untuk korupsi", "B. Pekerja keras menghargai proses dan keringatnya sendiri, sehingga jijik memakan uang haram hasil korupsi", "C. Pekerja keras pasti jadi orang kaya dan tidak perlu korupsi", "D. Pekerja keras hanya memikirkan pekerjaan fisik"], answer: 1, explanation: "Menghargai proses membuat seseorang tidak menyukai jalan pintas (korupsi)." },
+            { q: "Mengeluh ketika diberikan tugas sekolah yang banyak adalah ciri dari siswa yang...", options: ["A. Malas dan kurang kerja keras", "B. Pintar mengatur waktu", "C. Kritis terhadap kurikulum", "D. Mandiri"], answer: 0, explanation: "Mengeluh di awal menunjukkan mental yang lemah dalam menghadapi tantangan belajar." },
+            { q: "Tokoh bangsa yang dikenal pekerja keras dan bisa menjadi teladan adalah...", options: ["A. Tokoh fiktif di sinetron", "B. BJ Habibie yang gigih belajar hingga bisa membuat pesawat", "C. Koruptor yang berhasil lolos ke luar negeri", "D. Pemain game online yang bermain 24 jam non-stop tanpa sekolah"], answer: 1, explanation: "B.J. Habibie adalah simbol intelektualitas dan kerja keras yang nyata." },
+            { q: "Kerja keras tanpa diimbangi kejujuran akan menghasilkan...", options: ["A. Kesuksesan yang berkah", "B. Kehancuran dan tindakan menghalalkan segala cara (seperti korupsi)", "C. Kedamaian batin", "D. Kepercayaan penuh dari atasan"], answer: 1, explanation: "Kerja keras yang membabi buta tanpa moral kejujuran akan berujung pada kecurangan." },
+            { q: "Contoh nyata kerja keras dalam kegiatan ekstrakurikuler Pramuka adalah...", options: ["A. Datang terlambat setiap latihan", "B. Berlatih sungguh-sungguh mempelajari tali-temali dan sandi morse untuk persiapan lomba", "C. Menyuruh adik kelas menyiapkan tenda sementara kita bersantai", "D. Hanya ikut saat ada acara makan-makan"], answer: 1, explanation: "Latihan sungguh-sungguh adalah bentuk dedikasi dan kerja keras." },
+            { q: "Seseorang yang bermental pekerja keras akan menganggap kegagalan sebagai...", options: ["A. Akhir dari segalanya", "B. Alasan untuk berhenti berusaha", "C. Batu loncatan dan pembelajaran untuk sukses di masa depan", "D. Nasib buruk yang tidak bisa diubah"], answer: 2, explanation: "Kegagalan adalah guru terbaik bagi orang yang bermental pekerja keras." },
+            { q: "Di bawah ini yang termasuk perilaku kerja keras di lingkungan rumah adalah...", options: ["A. Membiarkan kamar berantakan", "B. Membantu orang tua menyapu dan merapikan rumah tanpa harus disuruh", "C. Bangun tidur kesiangan di hari Minggu", "D. Bermain HP sambil makan dan tidak mencuci piring"], answer: 1, explanation: "Mengambil inisiatif meringankan beban orang tua adalah bentuk kerja keras di rumah." },
+            // Adil (42-50)
+            { q: "Pengertian nilai keadilan di lingkungan kelas adalah...", options: ["A. Memberikan nilai 100 kepada semua siswa tanpa melihat hasil ulangannya", "B. Memperlakukan teman sesuai dengan harkat dan martabatnya tanpa membedakan suku, agama, atau kaya/miskin", "C. Meminta uang kas yang sama rata antara anak orang kaya dan anak yatim piatu", "D. Ketua kelas bebas menentukan peraturan sepihak"], answer: 1, explanation: "Adil berarti proporsional dan tidak diskriminatif (membeda-bedakan latar belakang)." },
+            { q: "Sebagai ketua OSIS, Budi memilih anggota kepanitiaan hanya dari teman-teman dekatnya saja meskipun ada siswa lain yang lebih kompeten. Sikap Budi bertentangan dengan nilai...", options: ["A. Kerja keras", "B. Keadilan (dan merupakan bentuk Nepotisme)", "C. Kesederhanaan", "D. Kemandirian"], answer: 1, explanation: "Memilih berdasarkan kedekatan tanpa melihat kompetensi adalah tidak adil (nepotisme)." },
+            { q: "Saat membagi tugas kelompok, tindakan yang paling adil adalah...", options: ["A. Membagi tugas sesuai kemampuan dan kesepakatan bersama secara proporsional", "B. Memberikan tugas paling berat kepada siswa yang paling pintar", "C. Membiarkan siswa yang malas tidak mendapat tugas", "D. Ketua kelompok mengerjakan semuanya agar cepat selesai"], answer: 0, explanation: "Adil tidak selalu bermakna sama rata, tapi sesuai porsi dan kesepakatan yang seimbang." },
+            { q: "Seorang guru memberikan hukuman menyapu kelas kepada dua siswa yang berkelahi, tanpa memandang siapa yang anaknya pejabat. Sikap guru ini menunjukkan nilai...", options: ["A. Keadilan", "B. Kekejaman", "C. Kepedulian", "D. Kesederhanaan"], answer: 0, explanation: "Hukum yang ditegakkan tanpa pandang bulu adalah wujud keadilan yang sesungguhnya." },
+            { q: "Sikap diskriminatif (membeda-bedakan teman) di sekolah merupakan bentuk nyata dari tidak berjalannya nilai...", options: ["A. Kemandirian", "B. Keadilan", "C. Kerja Keras", "D. Kesederhanaan"], answer: 1, explanation: "Diskriminasi adalah musuh utama dari keadilan." },
+            { q: "Korupsi sangat merugikan negara dan rakyat karena merampas hak-hak masyarakat untuk mendapatkan fasilitas publik yang baik. Hal ini sangat bertentangan dengan asas...", options: ["A. Kesederhanaan", "B. Keadilan Sosial", "C. Kemandirian", "D. Kejujuran"], answer: 1, explanation: "Korupsi merampas hak orang banyak demi segelintir orang, melanggar keadilan sosial." },
+            { q: "Saat sedang antre di kantin sekolah, ada temanmu yang tiba-tiba menyerobot antrean karena merasa senior. Sikap yang tepat adalah...", options: ["A. Membiarkannya karena dia lebih tua", "B. Menegurnya dengan sopan agar kembali antre di belakang", "C. Ikut menyerobot di belakangnya", "D. Menangis dan lapor kepada kepala sekolah"], answer: 1, explanation: "Budaya antre adalah aplikasi sederhana dari nilai keadilan, menegur pelanggar adalah tindakan berani yang benar." },
+            { q: "Apa yang dimaksud dengan 'Adil tidak harus sama rata'?", options: ["A. Semua orang harus mendapat bagian yang sama bagaimanapun kondisinya", "B. Memberikan hak kepada seseorang sesuai dengan porsi, kebutuhan, dan tanggung jawabnya", "C. Yang kuat mendapat bagian paling banyak", "D. Tidak ada keadilan di dunia ini"], answer: 1, explanation: "Adil proporsional; contoh: uang saku anak SMA lebih besar dari anak SD karena kebutuhannya berbeda." },
+            { q: "Mendengarkan pendapat dari teman kelompok yang pendiam saat diskusi adalah perwujudan sikap adil dalam hal...", options: ["A. Finansial", "B. Kebebasan berekspresi", "C. Beragama", "D. Pembagian tugas"], answer: 1, explanation: "Memberikan ruang untuk berbicara kepada setiap anggota adalah adil secara sosial dan ekspresi." }
+        ];
+
+        // --- STATE VARIABLES ---
+        let currentQuestion = 0;
+        let userAnswers = new Array(questions.length).fill(null);
+        let timeRemaining = 90 * 60; // 90 minutes in seconds
+        let timerInterval;
+        let warningCount = 0;
+        const MAX_WARNINGS = 2;
+        let isExamActive = false;
+
+        let studentData = {
+            name: "",
+            class: "",
+            score: 0,
+            correct: 0,
+            incorrect: 0
+        };
+
+        // --- DOM ELEMENTS ---
+        const loginSection = document.getElementById('loginSection');
+        const examSection = document.getElementById('examSection');
+        const resultSection = document.getElementById('resultSection');
+        const studentNameInput = document.getElementById('studentName');
+        const studentClassInput = document.getElementById('studentClass');
+        const studentInfoDisplay = document.getElementById('studentInfoDisplay');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const questionText = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const currentQuestionNum = document.getElementById('currentQuestionNum');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+        const btnSubmit = document.getElementById('btnSubmit');
+        const questionListModal = document.getElementById('questionListModal');
+        const questionGrid = document.getElementById('questionGrid');
+        
+        // --- CORE FUNCTIONS ---
+
+        function startExam() {
+            studentData.name = studentNameInput.value.trim();
+            studentData.class = studentClassInput.value;
+
+            if (!studentData.name || !studentData.class) {
+                showAlert("Peringatan", "Harap isi Nama dan Kelas terlebih dahulu!");
+                return;
+            }
+
+            // Attempt Fullscreen for Anti-Cheat
+            let elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            }
+
+            studentInfoDisplay.textContent = `${studentData.name} - ${studentData.class}`;
+            
+            loginSection.classList.add('hidden');
+            examSection.classList.remove('hidden');
+            examSection.classList.add('flex');
+            
+            isExamActive = true;
+            setupAntiCheat();
+            renderQuestion();
+            startTimer();
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQuestion];
+            currentQuestionNum.textContent = currentQuestion + 1;
+            questionText.textContent = q.q;
+
+            optionsContainer.innerHTML = '';
+            q.options.forEach((opt, index) => {
+                const isSelected = userAnswers[currentQuestion] === index;
+                const optHTML = `
+                    <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-colors duration-200 ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50 bg-white'}">
+                        <input type="radio" name="option" value="${index}" class="w-5 h-5 text-blue-600 focus:ring-blue-500 border-gray-300" ${isSelected ? 'checked' : ''} onchange="selectOption(${index})">
+                        <span class="ml-3 text-gray-700">${opt}</span>
+                    </label>
+                `;
+                optionsContainer.insertAdjacentHTML('beforeend', optHTML);
+            });
+
+            // Update Navigation Buttons
+            btnPrev.disabled = currentQuestion === 0;
+            
+            if (currentQuestion === questions.length - 1) {
+                btnNext.classList.add('hidden');
+                btnSubmit.classList.remove('hidden');
+            } else {
+                btnNext.classList.remove('hidden');
+                btnSubmit.classList.add('hidden');
+            }
+
+            updateQuestionGrid();
+        }
+
+        function selectOption(index) {
+            userAnswers[currentQuestion] = index;
+            renderQuestion(); // Re-render to update UI colors
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                renderQuestion();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                renderQuestion();
+            }
+        }
+
+        function jumpToQuestion(index) {
+            currentQuestion = index;
+            renderQuestion();
+            toggleQuestionList();
+        }
+
+        // --- TIMER & UI ---
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                let m = Math.floor(timeRemaining / 60);
+                let s = timeRemaining % 60;
+                timerDisplay.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+                if (timeRemaining <= 300) { // 5 minutes left
+                    timerDisplay.classList.add('text-red-500', 'animate-pulse');
+                    timerDisplay.previousElementSibling.classList.replace('text-blue-500', 'text-red-500');
+                }
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    forceSubmit("Waktu Ujian Habis!");
+                }
+            }, 1000);
+        }
+
+        function toggleQuestionList() {
+            if(questionListModal.classList.contains('hidden')) {
+                questionListModal.classList.remove('hidden');
+                updateQuestionGrid();
+            } else {
+                questionListModal.classList.add('hidden');
+            }
+        }
+
+        function updateQuestionGrid() {
+            questionGrid.innerHTML = '';
+            for (let i = 0; i < questions.length; i++) {
+                const isAnswered = userAnswers[i] !== null;
+                const isActive = i === currentQuestion;
+                
+                let baseClass = "w-10 h-10 flex items-center justify-center rounded font-bold cursor-pointer text-sm transition-all";
+                if (isActive) {
+                    baseClass += " ring-2 ring-blue-600 ring-offset-2";
+                }
+
+                if (isAnswered) {
+                    baseClass += " bg-green-500 text-white hover:bg-green-600";
+                } else {
+                    baseClass += " bg-white border border-gray-300 text-gray-700 hover:bg-gray-100";
+                }
+
+                questionGrid.innerHTML += `<div onclick="jumpToQuestion(${i})" class="${baseClass}">${i + 1}</div>`;
+            }
+        }
+
+        // --- SUBMIT & API ---
+
+        function submitExamPrompt() {
+            let unanswered = userAnswers.filter(ans => ans === null).length;
+            let msg = unanswered > 0 ? 
+                `Masih ada <b>${unanswered}</b> soal yang belum dijawab.<br>Yakin ingin mengumpulkan?` : 
+                `Anda sudah menjawab semua soal.<br>Yakin ingin mengumpulkan sekarang?`;
+            
+            document.getElementById('confirmMessage').innerHTML = msg;
+            document.getElementById('customConfirm').classList.remove('hidden');
+        }
+
+        function closeConfirm() {
+            document.getElementById('customConfirm').classList.add('hidden');
+        }
+
+        function executeSubmit() {
+            closeConfirm();
+            processSubmission();
+        }
+
+        function forceSubmit(reason) {
+            showAlert("Ujian Selesai", reason + " Jawaban Anda otomatis dikumpulkan.");
+            setTimeout(() => {
+                processSubmission();
+            }, 2000);
+        }
+
+        async function processSubmission() {
+            isExamActive = false;
+            clearInterval(timerInterval);
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+
+            // Calculate Score
+            studentData.correct = 0;
+            userAnswers.forEach((ans, idx) => {
+                if (ans === questions[idx].answer) {
+                    studentData.correct++;
+                }
+            });
+            studentData.incorrect = questions.length - studentData.correct;
+            studentData.score = studentData.correct * 2; // 2 points per question
+
+            // Send to Google Sheets
+            try {
+                if(GOOGLE_SHEET_WEBAPP_URL === "GANTI_DENGAN_URL_WEB_APP_ANDA_DISINI") {
+                    console.warn("Spreadsheet URL belum disetting. Hanya menampilkan hasil lokal.");
+                    finishExamUI();
+                    return;
+                }
+
+                let payload = {
+                    nama: studentData.name,
+                    kelas: studentData.class,
+                    benar: studentData.correct,
+                    salah: studentData.incorrect,
+                    nilai: studentData.score
+                };
+
+                await fetch(GOOGLE_SHEET_WEBAPP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Diperlukan untuk Google Apps Script
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                finishExamUI();
+            } catch (error) {
+                console.error("Error saving data:", error);
+                document.getElementById('loadingText').textContent = "Gagal menyimpan ke server. Hasil tetap ditampilkan.";
+                setTimeout(finishExamUI, 2000);
+            }
+        }
+
+        function finishExamUI() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            
+            // Exit fullscreen if active
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(err => console.log(err));
+            }
+
+            examSection.classList.add('hidden');
+            examSection.classList.remove('flex');
+            resultSection.classList.remove('hidden');
+            resultSection.classList.add('flex');
+
+            document.getElementById('resBenar').textContent = studentData.correct;
+            document.getElementById('resSalah').textContent = studentData.incorrect;
+            document.getElementById('resNilai').textContent = studentData.score;
+
+            renderReview();
+        }
+
+        function renderReview() {
+            const reviewContainer = document.getElementById('reviewContainer');
+            reviewContainer.innerHTML = '';
+
+            questions.forEach((q, idx) => {
+                const userAns = userAnswers[idx];
+                const isCorrect = userAns === q.answer;
+                const statusColor = isCorrect ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500';
+                const icon = isCorrect ? '<i class="fas fa-check-circle text-green-500"></i>' : '<i class="fas fa-times-circle text-red-500"></i>';
+
+                let optionsHTML = '';
+                q.options.forEach((opt, optIdx) => {
+                    let optStyle = "text-gray-600";
+                    if (optIdx === q.answer) {
+                        optStyle = "text-green-600 font-bold bg-green-50 p-1 rounded"; // Correct answer styling
+                    } else if (optIdx === userAns && !isCorrect) {
+                        optStyle = "text-red-500 line-through bg-red-50 p-1 rounded"; // User wrong answer
+                    }
+                    optionsHTML += `<div class="${optStyle} text-sm md:text-base mt-1 mb-1">${opt}</div>`;
+                });
+
+                let explanationHTML = `
+                    <div class="mt-3 bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r text-sm">
+                        <strong><i class="fas fa-lightbulb text-yellow-500 mr-1"></i> Penjelasan:</strong> ${q.explanation}
+                    </div>
+                `;
+
+                const cardHTML = `
+                    <div class="border-l-4 ${statusColor} bg-white p-5 rounded shadow-sm relative">
+                        <div class="absolute top-4 right-4 text-2xl">${icon}</div>
+                        <h4 class="font-bold text-gray-800 mb-2">Soal ${idx + 1}</h4>
+                        <p class="text-gray-700 mb-3">${q.q}</p>
+                        <div class="ml-2 mb-3">
+                            ${optionsHTML}
+                        </div>
+                        ${explanationHTML}
+                    </div>
+                `;
+                reviewContainer.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        // --- ANTI CHEAT SYSTEM ---
+
+        function setupAntiCheat() {
+            // 1. Tab Switch / Minimize Detection
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden && isExamActive) {
+                    triggerCheatWarning("Sistem mendeteksi Anda meninggalkan halaman ujian (berpindah tab/aplikasi).");
+                }
+            });
+
+            // 2. Keyboard Shortcuts (F12, Ctrl+Shift+I, PrintScreen)
+            document.addEventListener('keydown', (e) => {
+                if(!isExamActive) return;
+                
+                // Block F12, Ctrl+Shift+I, Ctrl+U, PrintScreen
+                if (
+                    e.key === "F12" || 
+                    (e.ctrlKey && e.shiftKey && e.key === "I") || 
+                    (e.ctrlKey && e.key === "u") ||
+                    e.key === "PrintScreen" || 
+                    e.key === "Meta" // Windows/Mac key
+                ) {
+                    e.preventDefault();
+                    triggerCheatWarning("Penggunaan tombol pintasan (Shortcut) dilarang selama ujian!");
+                }
+            });
+
+            // 3. Prevent exiting Fullscreen (if they escape via ESC)
+            document.addEventListener("fullscreenchange", () => {
+                if (!document.fullscreenElement && isExamActive) {
+                    triggerCheatWarning("Anda keluar dari mode layar penuh. Segera kembali untuk melanjutkan ujian!");
+                }
+            });
+        }
+
+        function triggerCheatWarning(msg) {
+            warningCount++;
+            document.getElementById('cheatWarningDisplay').classList.remove('hidden');
+            document.getElementById('warningCountDisplay').textContent = warningCount;
+
+            if (warningCount >= MAX_WARNINGS) {
+                forceSubmit("Peringatan Kecurangan Maksimal Tercapai!");
+            } else {
+                showAlert("Peringatan Kecurangan!", `${msg}<br><br>Pelanggaran: <b>${warningCount} dari ${MAX_WARNINGS}</b>.<br>Jika melanggar sekali lagi, ujian akan otomatis dihentikan.`);
+            }
+        }
+
+        // --- UTILS ---
+        const customAlert = document.getElementById('customAlert');
+        function showAlert(title, message) {
+            document.getElementById('alertTitle').innerHTML = title;
+            document.getElementById('alertMessage').innerHTML = message;
+            customAlert.classList.remove('hidden');
+        }
+
+        function closeAlert() {
+            customAlert.classList.add('hidden');
+            // Try to force fullscreen back if they closed it
+            if(isExamActive && !document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            }
+        }
+    </script>
+</body>
+</html>
